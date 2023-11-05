@@ -140,15 +140,21 @@ class PostController extends Controller
     {
         $post = Post::find($id);
 
+        // トランザクション開始
         DB::beginTransaction();
-        try{
+        try {
             $post->delete();
 
-            if (!Storage::delete('images/posts/', $post->image)) {
+            // 画像削除
+            if (!Storage::delete($post->image_path)) {
+                // 例外を投げてロールバックさせる
                 throw new \Exception('画像ファイルの削除に失敗しました。');
             }
+
+            // トランザクション終了(成功)
             DB::commit();
         } catch (\Exception $e) {
+            // トランザクション終了(失敗)
             DB::rollback();
             return back()->withErrors($e->getMessage());
         }
@@ -158,7 +164,7 @@ class PostController extends Controller
     }
 
     private static function createFileName($file)
-    {
-        return date('YmdHis') . '_' . $file->getClientOriginalName();
-    }
+        {
+            return date('YmdHis') . '_' . $file->getClientOriginalName();
+        }
 }
